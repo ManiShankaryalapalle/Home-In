@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useAuth } from "@/components/context/AuthContext";
-import { Listing } from "@/types/listing";
 import { createListing } from "@/lib/supabase-listings";
+import AddressSearch from "@/components/map/AddressSearch";
 
 export default function PostListingPage() {
   const router = useRouter();
@@ -19,150 +19,78 @@ export default function PostListingPage() {
   const [bathrooms, setBathrooms] = useState("");
   const [description, setDescription] = useState("");
   const [furnishing, setFurnishing] = useState("fully furnished");
+
   const [hotWaterIncluded, setHotWaterIncluded] = useState(false);
-const [wifiIncluded, setWifiIncluded] = useState(false);
-const [parkingIncluded, setParkingIncluded] = useState(false);
-const [electricityIncluded, setElectricityIncluded] = useState(false);
-const [uploading, setUploading] = useState(false);
+  const [wifiIncluded, setWifiIncluded] = useState(false);
+  const [parkingIncluded, setParkingIncluded] = useState(false);
+  const [electricityIncluded, setElectricityIncluded] = useState(false);
+
   const [images, setImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+
   const [latitude, setLatitude] = useState<number | null>(null);
-const [longitude, setLongitude] = useState<number | null>(null);
-const [findingLocation, setFindingLocation] = useState(false);
+  const [longitude, setLongitude] = useState<number | null>(null);
 
   if (!isLoggedIn) {
     return (
       <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
         <div className="mx-auto max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
           <h1 className="text-3xl font-bold">Post Listing</h1>
-          <p className="mt-4 text-slate-400">
-            Please sign in first.
-          </p>
+          <p className="mt-4 text-slate-400">Please sign in first.</p>
         </div>
       </main>
     );
   }
 
-  
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
-async function handleImageUpload(
-  e: React.ChangeEvent<HTMLInputElement>
-) {
-  const files = Array.from(e.target.files || []);
+    try {
+      setUploading(true);
 
-  if (!files.length) return;
+      const uploadedUrls = await Promise.all(
+        files.map(async (file) => {
+          const { uploadListingImage } = await import(
+            "@/lib/supabase-storage"
+          );
 
-  try {
-    setUploading(true);
+          return uploadListingImage(file);
+        })
+      );
 
-    const uploadedUrls = await Promise.all(
-      files.map(async (file) => {
-        const { uploadListingImage } = await import(
-          "@/lib/supabase-storage"
-        );
-
-        return uploadListingImage(file);
-      })
-    );
-
-    setImages((prev) => [...prev, ...uploadedUrls]);
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setUploading(false);
-  }
-}
-async function handleFindLocation() {
-  if (!address.trim() || !city.trim()) {
-    toast.error("Enter city and address first.");
-    return;
-  }
-
-  try {
-    setFindingLocation(true);
-
-    const fullAddress = `${address}, ${city}`;
-
-    const res = await fetch(
-      `/api/geocode?address=${encodeURIComponent(fullAddress)}`
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      toast.error(data.error || "Could not find location.");
-      return;
+      setImages((prev) => [...prev, ...uploadedUrls]);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to upload images.");
+    } finally {
+      setUploading(false);
     }
-
-    setAddress(data.formattedAddress);
-    setLatitude(data.lat);
-    setLongitude(data.lng);
-
-    toast.success("Location found.");
-  } catch (error) {
-    console.error(error);
-    toast.error("Failed to find location.");
-  } finally {
-    setFindingLocation(false);
   }
-}
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (
-  !title ||
-  !price ||
-  !city ||
-  !address ||
-  !latitude ||
-  !longitude
-) {
-      toast.error("Please fill all required fields.", {
+      !title ||
+      !price ||
+      !city ||
+      !address ||
+      !bedrooms ||
+      !bathrooms ||
+      !latitude ||
+      !longitude
+    ) {
+      toast.error("Please fill all required fields and select an address.", {
         id: "post-listing-toast",
       });
       return;
     }
 
-    const listing: Listing = {
-      id: crypto.randomUUID(),
-      title,
-      price: Number(price),
-      city,
-      neighborhood : address,
-      bedrooms: Number(bedrooms),
-      bathrooms: Number(bathrooms),
-      sqft: 0,
-
-      image:
-        images[0] ||
-        "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
-
-      images,
-
-      source: "Home-in",
-      verified: false,
-
-      aiMatchScore: 90,
-
-      priceInsight: "fair",
-
-      coordinates: {
-        lat: 45.5017,
-        lng: -73.5673,
-      },
-
-      nearbyPlaces: {
-        groceries: 2,
-        gyms: 2,
-        transit: 1,
-        restaurants: 5,
-        hospitals: 1,
-      },
-    };
-
     try {
-await createListing({
-  title,
-  description: `
+      await createListing({
+        title,
+        description: `
 ${description}
 
 Furnishing: ${furnishing}
@@ -173,36 +101,37 @@ ${wifiIncluded ? "• WiFi Included\n" : ""}
 ${parkingIncluded ? "• Parking Included\n" : ""}
 ${electricityIncluded ? "• Electricity Included\n" : ""}
 `,
-  price: Number(price),
-  city,
-  neighborhood: address,
-  bedrooms: Number(bedrooms),
-  bathrooms: Number(bathrooms),
-  sqft: 0,
+        price: Number(price),
+        city,
+        neighborhood: address,
+        bedrooms: Number(bedrooms),
+        bathrooms: Number(bathrooms),
+        sqft: 0,
 
-  image:
-    images[0] ||
-    "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
+        image:
+          images[0] ||
+          "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
 
-  images,
-  source: "Home-in",
-  verified: false,
-  ai_match_score: 90,
-  price_insight: "fair",
-  latitude,
-  longitude,
-});
+        images,
+        source: "Home-in",
+        verified: false,
+        ai_match_score: 90,
+        price_insight: "fair",
+        latitude,
+        longitude,
+      });
 
-  toast.success("Listing posted successfully.", {
-    id: "post-listing-toast",
-  });
+      toast.success("Listing posted successfully.", {
+        id: "post-listing-toast",
+      });
 
-  router.push("/search");
-} catch {
-  toast.error("Failed to post listing.", {
-    id: "post-listing-toast",
-  });
-}
+      router.push("/search");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to post listing.", {
+        id: "post-listing-toast",
+      });
+    }
   }
 
   return (
@@ -210,10 +139,7 @@ ${electricityIncluded ? "• Electricity Included\n" : ""}
       <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-white/5 p-8">
         <h1 className="text-3xl font-bold">Post a Listing</h1>
 
-        <form
-          onSubmit={handleSubmit}
-          className="mt-8 space-y-6"
-        >
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <input
             type="text"
             placeholder="Listing title"
@@ -247,35 +173,33 @@ ${electricityIncluded ? "• Electricity Included\n" : ""}
               className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
             />
 
-            
-            <div className="space-y-3">
-  <input
-    type="text"
-    placeholder="Full address"
-    value={address}
-    onChange={(e) => {
-      setAddress(e.target.value);
-      setLatitude(null);
-      setLongitude(null);
-    }}
-    className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
-  />
+            <div className="space-y-3 md:col-span-2">
+              <label className="text-sm font-medium text-slate-300">
+                Property Address
+              </label>
 
-  <button
-    type="button"
-    onClick={handleFindLocation}
-    disabled={findingLocation}
-    className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-300"
-  >
-    {findingLocation ? "Finding..." : "Find Location"}
-  </button>
+              <AddressSearch
+  value={address}
+  onChange={(value) => {
+    setAddress(value);
+  }}
+  onSelect={(selectedAddress, lat, lng) => {
+    setAddress(selectedAddress);
+    setLatitude(lat);
+    setLongitude(lng);
+  }}
+/>
 
-  {latitude && longitude && (
-    <p className="text-sm text-emerald-300">
-      Location found: {latitude.toFixed(5)}, {longitude.toFixed(5)}
-    </p>
-  )}
-</div>
+              {latitude && longitude && (
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-300">
+                  Location selected successfully
+                  <br />
+                  Lat: {latitude.toFixed(5)}
+                  <br />
+                  Lng: {longitude.toFixed(5)}
+                </div>
+              )}
+            </div>
 
             <input
               type="number"
@@ -292,57 +216,58 @@ ${electricityIncluded ? "• Electricity Included\n" : ""}
               onChange={(e) => setBathrooms(e.target.value)}
               className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
             />
+
             <select
-  value={furnishing}
-  onChange={(e) => setFurnishing(e.target.value)}
-  className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
->
-  <option value="fully furnished">Fully Furnished</option>
-  <option value="semi furnished">Semi Furnished</option>
-  <option value="not furnished">Not Furnished</option>
-</select>
-<div className="space-y-3 rounded-2xl border border-white/10 bg-slate-900/50 p-4">
-  <h3 className="text-sm font-medium text-white">
-    Included Amenities
-  </h3>
+              value={furnishing}
+              onChange={(e) => setFurnishing(e.target.value)}
+              className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
+            >
+              <option value="fully furnished">Fully Furnished</option>
+              <option value="semi furnished">Semi Furnished</option>
+              <option value="not furnished">Not Furnished</option>
+            </select>
+          </div>
 
-  <label className="flex items-center gap-3 text-sm text-slate-300">
-    <input
-      type="checkbox"
-      checked={hotWaterIncluded}
-      onChange={(e) => setHotWaterIncluded(e.target.checked)}
-    />
-    Hot Water Included
-  </label>
+          <div className="space-y-3 rounded-2xl border border-white/10 bg-slate-900/50 p-4">
+            <h3 className="text-sm font-medium text-white">
+              Included Amenities
+            </h3>
 
-  <label className="flex items-center gap-3 text-sm text-slate-300">
-    <input
-      type="checkbox"
-      checked={wifiIncluded}
-      onChange={(e) => setWifiIncluded(e.target.checked)}
-    />
-    WiFi Included
-  </label>
+            <label className="flex items-center gap-3 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={hotWaterIncluded}
+                onChange={(e) => setHotWaterIncluded(e.target.checked)}
+              />
+              Hot Water Included
+            </label>
 
-  <label className="flex items-center gap-3 text-sm text-slate-300">
-    <input
-      type="checkbox"
-      checked={parkingIncluded}
-      onChange={(e) => setParkingIncluded(e.target.checked)}
-    />
-    Parking Provided
-  </label>
+            <label className="flex items-center gap-3 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={wifiIncluded}
+                onChange={(e) => setWifiIncluded(e.target.checked)}
+              />
+              WiFi Included
+            </label>
 
-  <label className="flex items-center gap-3 text-sm text-slate-300">
-    <input
-      type="checkbox"
-      checked={electricityIncluded}
-      onChange={(e) => setElectricityIncluded(e.target.checked)}
-    />
-    Electricity Bill Included
-  </label>
-</div>
-            
+            <label className="flex items-center gap-3 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={parkingIncluded}
+                onChange={(e) => setParkingIncluded(e.target.checked)}
+              />
+              Parking Provided
+            </label>
+
+            <label className="flex items-center gap-3 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={electricityIncluded}
+                onChange={(e) => setElectricityIncluded(e.target.checked)}
+              />
+              Electricity Bill Included
+            </label>
           </div>
 
           <div>
@@ -357,11 +282,13 @@ ${electricityIncluded ? "• Electricity Included\n" : ""}
               onChange={handleImageUpload}
               className="block w-full text-sm text-slate-300"
             />
+
             {uploading && (
-  <p className="mt-3 text-sm text-cyan-300">
-    Uploading images...
-  </p>
-)}
+              <p className="mt-3 text-sm text-cyan-300">
+                Uploading images...
+              </p>
+            )}
+
             {images.length > 0 && (
               <div className="mt-4 grid grid-cols-3 gap-3">
                 {images.map((img, index) => (
