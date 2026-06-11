@@ -91,3 +91,18 @@ export async function deleteListing(id: string, imageUrls: string[] = []) {
     await supabase.storage.from("listing-images").remove(filePaths);
   }
 }
+export async function updateListing(id: string, updates: any) {
+  const { data, error } = await supabase
+    .from("listings")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error(error);
+    throw error;
+  }
+
+  return data;
+}

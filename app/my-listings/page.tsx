@@ -96,6 +96,12 @@ export default function MyListingsPage() {
                       >
                         View
                       </Link>
+                      <Link
+  href={`/edit-listing/${listing.id}`}
+  className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-300 transition hover:bg-cyan-400/20"
+>
+  Edit
+</Link>
 
                       <button
                         onClick={() => setListingToDelete(listing)}
