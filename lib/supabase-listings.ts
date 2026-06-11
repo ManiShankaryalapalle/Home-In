@@ -75,3 +75,19 @@ export async function fetchMyListings() {
 
   return data || [];
 }
+export async function deleteListing(id: string, imageUrls: string[] = []) {
+  const { error } = await supabase.from("listings").delete().eq("id", id);
+
+  if (error) {
+    console.error(error);
+    throw error;
+  }
+
+  const filePaths = imageUrls
+    .filter((url) => url.includes("/listing-images/"))
+    .map((url) => url.split("/listing-images/")[1]);
+
+  if (filePaths.length > 0) {
+    await supabase.storage.from("listing-images").remove(filePaths);
+  }
+}
