@@ -1,6 +1,11 @@
+import Navbar from "@/components/layout/Navbar";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SavedListingsProvider } from "@/components/context/SavedListingsContext";
+import { CompareListingsProvider } from "@/components/context/CompareListingsContext";
+import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "@/components/context/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +32,17 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+  <AuthProvider>
+    <SavedListingsProvider>
+      <CompareListingsProvider>
+        <Navbar />
+        {children}
+        <Toaster position="top-right" />
+      </CompareListingsProvider>
+    </SavedListingsProvider>
+  </AuthProvider>
+</body>
     </html>
   );
 }
