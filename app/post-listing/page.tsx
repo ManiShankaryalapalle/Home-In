@@ -25,6 +25,9 @@ const [parkingIncluded, setParkingIncluded] = useState(false);
 const [electricityIncluded, setElectricityIncluded] = useState(false);
 const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [latitude, setLatitude] = useState<number | null>(null);
+const [longitude, setLongitude] = useState<number | null>(null);
+const [findingLocation, setFindingLocation] = useState(false);
 
   if (!isLoggedIn) {
     return (
@@ -68,18 +71,51 @@ async function handleImageUpload(
     setUploading(false);
   }
 }
+async function handleFindLocation() {
+  if (!address.trim() || !city.trim()) {
+    toast.error("Enter city and address first.");
+    return;
+  }
 
+  try {
+    setFindingLocation(true);
+
+    const fullAddress = `${address}, ${city}`;
+
+    const res = await fetch(
+      `/api/geocode?address=${encodeURIComponent(fullAddress)}`
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      toast.error(data.error || "Could not find location.");
+      return;
+    }
+
+    setAddress(data.formattedAddress);
+    setLatitude(data.lat);
+    setLongitude(data.lng);
+
+    toast.success("Location found.");
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to find location.");
+  } finally {
+    setFindingLocation(false);
+  }
+}
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (
-      !title ||
-      !price ||
-      !city ||
-      !address ||
-      !bedrooms ||
-      !bathrooms
-    ) {
+  !title ||
+  !price ||
+  !city ||
+  !address ||
+  !latitude ||
+  !longitude
+) {
       toast.error("Please fill all required fields.", {
         id: "post-listing-toast",
       });
@@ -153,8 +189,8 @@ ${electricityIncluded ? "• Electricity Included\n" : ""}
   verified: false,
   ai_match_score: 90,
   price_insight: "fair",
-  latitude: 45.5017,
-  longitude: -73.5673,
+  latitude,
+  longitude,
 });
 
   toast.success("Listing posted successfully.", {
@@ -212,13 +248,34 @@ ${electricityIncluded ? "• Electricity Included\n" : ""}
             />
 
             
-            <input
-  type="text"
-  placeholder="Full address"
-  value={address}
-  onChange={(e) => setAddress(e.target.value)}
-  className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
-/>
+            <div className="space-y-3">
+  <input
+    type="text"
+    placeholder="Full address"
+    value={address}
+    onChange={(e) => {
+      setAddress(e.target.value);
+      setLatitude(null);
+      setLongitude(null);
+    }}
+    className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
+  />
+
+  <button
+    type="button"
+    onClick={handleFindLocation}
+    disabled={findingLocation}
+    className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-300"
+  >
+    {findingLocation ? "Finding..." : "Find Location"}
+  </button>
+
+  {latitude && longitude && (
+    <p className="text-sm text-emerald-300">
+      Location found: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+    </p>
+  )}
+</div>
 
             <input
               type="number"
