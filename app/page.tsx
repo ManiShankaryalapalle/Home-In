@@ -1,8 +1,9 @@
+import Link from "next/link";
+
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <section className="mx-auto flex max-w-7xl flex-col items-center justify-center px-6 py-24 text-center">
-        
         <p className="mb-4 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-1 text-sm text-cyan-200">
           Home-in
         </p>
@@ -18,14 +19,20 @@ export default function HomePage() {
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <button className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:scale-105">
+          <Link
+            href="/search"
+            className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:scale-105"
+          >
             Start Searching
-          </button>
-          <button className="rounded-2xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
-            View Listings
-          </button>
-        </div>
+          </Link>
 
+          <Link
+            href="/search"
+            className="rounded-2xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+          >
+            View Listings
+          </Link>
+        </div>
       </section>
     </main>
   );
