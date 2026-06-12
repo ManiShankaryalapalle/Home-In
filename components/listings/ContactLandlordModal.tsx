@@ -51,7 +51,10 @@ export default function ContactLandlordModal({
 
     try {
       setSending(true);
-
+if (!user) {
+  toast.error("Please sign in first.", { id: "contact-toast" });
+  return;
+}
       await createInquiry({
         listingId,
         name: user.name,
