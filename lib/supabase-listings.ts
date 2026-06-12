@@ -106,3 +106,53 @@ export async function updateListing(id: string, updates: any) {
 
   return data;
 }
+export async function createInquiry({
+  listingId,
+  name,
+  email,
+  message,
+}: {
+  listingId: string;
+  name: string;
+  email: string;
+  message: string;
+}) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new Error("User not authenticated");
+
+  const { data, error } = await supabase
+    .from("inquiries")
+    .insert([
+      {
+        listing_id: listingId,
+        sender_id: user.id,
+        name,
+        email,
+        message,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
+export async function fetchReceivedInquiries(listingId: string) {
+  const { data, error } = await supabase
+    .from("inquiries")
+    .select("*")
+    .eq("listing_id", listingId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data || [];
+}

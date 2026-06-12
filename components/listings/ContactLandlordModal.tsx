@@ -3,29 +3,22 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/components/context/AuthContext";
-
-type Inquiry = {
-  id: string;
-  listingTitle: string;
-  name: string;
-  email: string;
-  message: string;
-  createdAt: string;
-};
-
-const INQUIRIES_KEY = "home-in-inquiries";
+import { createInquiry } from "@/lib/supabase-listings";
 
 export default function ContactLandlordModal({
   isOpen,
   onClose,
+  listingId,
   listingTitle,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  listingId: string;
   listingTitle: string;
 }) {
   const { user } = useAuth();
   const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -35,9 +28,20 @@ export default function ContactLandlordModal({
     }
   }, [isOpen, listingTitle]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleEsc(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !user) return null;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!message.trim()) {
@@ -45,25 +49,24 @@ export default function ContactLandlordModal({
       return;
     }
 
-    const existing = localStorage.getItem(INQUIRIES_KEY);
-    const inquiries: Inquiry[] = existing ? JSON.parse(existing) : [];
+    try {
+      setSending(true);
 
-    const newInquiry: Inquiry = {
-      id: crypto.randomUUID(),
-      listingTitle,
-      name: user.name,
-      email: user.email,
-      message,
-      createdAt: new Date().toISOString(),
-    };
+      await createInquiry({
+        listingId,
+        name: user.name,
+        email: user.email,
+        message,
+      });
 
-    localStorage.setItem(
-      INQUIRIES_KEY,
-      JSON.stringify([newInquiry, ...inquiries])
-    );
-
-    toast.success("Message sent to landlord.", { id: "contact-toast" });
-    onClose();
+      toast.success("Message sent to landlord.", { id: "contact-toast" });
+      onClose();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to send message.", { id: "contact-toast" });
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -77,7 +80,8 @@ export default function ContactLandlordModal({
 
           <button
             onClick={onClose}
-            className="rounded-full bg-white/10 px-3 py-1 text-white transition hover:bg-white/20"
+            disabled={sending}
+            className="rounded-full bg-white/10 px-3 py-1 text-white transition hover:bg-white/20 disabled:opacity-50"
           >
             ✕
           </button>
@@ -93,19 +97,34 @@ export default function ContactLandlordModal({
         </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <textarea
-            rows={5}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none"
-          />
+          <div>
+            <label className="mb-2 block text-sm text-slate-300">Message</label>
+            <textarea
+              rows={5}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
+            />
+          </div>
 
-          <button
-            type="submit"
-            className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-medium text-slate-950 transition hover:scale-[1.01]"
-          >
-            Send Message
-          </button>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={sending}
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:bg-white/10 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={sending}
+              className="rounded-2xl bg-white px-4 py-3 text-sm font-medium text-slate-950 transition hover:scale-[1.01] disabled:opacity-50"
+            >
+              {sending ? "Sending..." : "Send Message"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

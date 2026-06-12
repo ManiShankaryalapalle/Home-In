@@ -83,10 +83,11 @@ export default function ListingDetailsActions({
       </div>
 
       <ContactLandlordModal
-        isOpen={isContactOpen}
-        onClose={() => setIsContactOpen(false)}
-        listingTitle={listingTitle}
-      />
+  isOpen={isContactOpen}
+  onClose={() => setIsContactOpen(false)}
+  listingId={listingId}
+  listingTitle={listingTitle}
+/>
     </>
   );
 }
