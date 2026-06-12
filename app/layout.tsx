@@ -39,13 +39,13 @@ export default function RootLayout({
         <Navbar />
         {children}
         <Toaster
-  position="top-right"
+  position="top-center"
   toastOptions={{
     success: {
       duration: 500,
     },
     error: {
-      duration: 3500,
+      duration: 1500,
     },
   }}
 />
