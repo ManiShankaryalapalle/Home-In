@@ -49,7 +49,7 @@ export async function GET(req: Request) {
 
   const lat = searchParams.get("lat");
   const lng = searchParams.get("lng");
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY as string;
 
   if (!lat || !lng || !apiKey) {
     return Response.json(
