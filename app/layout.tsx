@@ -38,7 +38,17 @@ export default function RootLayout({
       <CompareListingsProvider>
         <Navbar />
         {children}
-        <Toaster position="top-right" />
+        <Toaster
+  position="top-right"
+  toastOptions={{
+    success: {
+      duration: 1000,
+    },
+    error: {
+      duration: 3500,
+    },
+  }}
+/>
       </CompareListingsProvider>
     </SavedListingsProvider>
   </AuthProvider>

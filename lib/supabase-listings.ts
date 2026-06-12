@@ -156,3 +156,54 @@ export async function fetchReceivedInquiries(listingId: string) {
 
   return data || [];
 }
+export async function fetchSentInquiries() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("inquiries")
+    .select(`
+      *,
+      listings (
+        id,
+        title,
+        city,
+        image
+      )
+    `)
+    .eq("sender_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function fetchAllReceivedInquiries() {
+  const { data, error } = await supabase
+    .from("inquiries")
+    .select(`
+      *,
+      listings (
+        id,
+        title,
+        city,
+        image,
+        user_id
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data || [];
+}
